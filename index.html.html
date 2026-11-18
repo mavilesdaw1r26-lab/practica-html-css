@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloc de Notas Web — Práctica HTML & CSS</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Fuente Inter y JetBrains Mono / Consolas -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+
+    /* Estilo del editor tipo Bloc de notas */
+    .code-font {
+      font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+      font-variant-ligatures: none;
+    }
+
+    #code-editor {
+      tab-size: 2;
+      -moz-tab-size: 2;
+      resize: none;
+      outline: none;
+      font-size: 14px;
+      line-height: 22px;
+      white-space: pre;
+      overflow-wrap: normal;
+      overflow-x: auto;
+      overflow-y: auto;
+    }
+
+    #line-numbers {
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+      line-height: 22px;
+      white-space: pre;
+      user-select: none;
+      text-align: right;
+    }
+
+    #line-numbers span {
+      display: block;
+      height: 22px;
+      line-height: 22px;
+    }
+
+    /* Divisor arrastrable */
+    #resizer {
+      width: 6px;
+      cursor: col-resize;
+      transition: background-color 0.15s ease;
+    }
+    #resizer:hover, #resizer.dragging {
+      background-color: #2563eb;
+    }
+
+    /* Scrollbar sutil */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.4);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.7);
+    }
+
+    /* Transición suave para simulación móvil */
+    #preview-wrapper {
+      transition: width 0.25s ease, box-shadow 0.25s ease;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 h-screen flex flex-col">
+
+  <!-- BARRA SUPERIOR DE HERRAMIENTAS -->
+  <header class="bg-[#0E2A5A] text-white px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 shadow-md z-20 shrink-0 select-none">
+    <!-- Logo y Título -->
+    <div class="flex items-center gap-2.5">
+      <div class="bg-white/15 p-1.5 rounded-lg flex items-center justify-center">
+        <svg class="w-5 h-5 text-sky-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-sm sm:text-base font-bold tracking-tight leading-none">Bloc de Notas Web</h1>
+        <p class="text-[11px] text-sky-200/90 hidden sm:block mt-0.5">Práctica HTML &amp; CSS en tiempo real</p>
+      </div>
+    </div>
+
+    <!-- Selector de Plantillas y Ejercicios -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <label for="template-select" class="text-xs text-sky-200 hidden md:inline font-medium">Modo:</label>
+      <select id="template-select" class="bg-[#163b7a] hover:bg-[#1c4791] text-white text-xs sm:text-sm rounded-lg px-2.5 py-1.5 border border-white/20 focus:outline-none focus:ring-2 focus:ring-sky-400 cursor-pointer">
+        <option value="progressive">1. Reto Continuo (Paso a paso desde cero)</option>
+        <option value="skeleton">2. Esqueleto HTML5 Básico</option>
+        <option value="solution">3. Solución Objetivo: Página SEO (Vídeo)</option>
+        <option value="blank">4. Documento en blanco</option>
+      </select>
+
+      <!-- Botón Ver Objetivo (Modal) -->
+      <button id="btn-goal" type="button" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+        <span>Ver Objetivo Final</span>
+      </button>
+
+      <!-- Botón Chuleta HTML/CSS -->
+      <button id="btn-cheatsheet" type="button" class="bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-medium px-3 py-1.5 rounded-lg border border-white/15 flex items-center gap-1.5 transition cursor-pointer">
+        <svg class="w-4 h-4 text-sky-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+        <span class="hidden sm:inline">Chuleta</span>
+      </button>
+    </div>
+
+    <!-- Acciones de Archivo -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <button id="btn-copy" type="button" title="Copiar todo el código" class="bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-medium px-2.5 py-1.5 rounded-lg border border-white/15 flex items-center gap-1.5 transition cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        <span class="hidden lg:inline">Copiar</span>
+      </button>
+
+      <button id="btn-download" type="button" title="Descargar archivo index.html" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm cursor-pointer">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        <span>Descargar <span class="hidden sm:inline">index.html</span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR PRINCIPAL SPLIT-PANE -->
+  <main id="workspace" class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+    <!-- PANEL IZQUIERDO: EDITOR TIPO BLOC DE NOTAS -->
+    <section id="editor-pane" class="w-full md:w-1/2 h-1/2 md:h-full flex flex-col bg-white border-b md:border-b-0 border-slate-300 transition-colors duration-200">
+      <!-- Sub-barra del Editor -->
+      <div id="editor-header" class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between text-xs text-slate-600 shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 font-semibold text-slate-700" id="editor-filename">
+            <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            index.html (Bloc de notas)
+          </span>
+          <span id="save-indicator" class="text-[11px] text-emerald-600 font-medium hidden sm:inline">● Sincronizado</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] text-slate-400 hidden lg:inline">Soporta tecla <kbd class="px-1 py-0.5 bg-slate-200/80 text-slate-600 rounded text-[10px]">Tab</kbd></span>
+          <!-- Botón Tema Claro / Oscuro del Editor -->
+          <button id="btn-theme" type="button" class="px-2 py-1 rounded hover:bg-slate-200 text-slate-600 flex items-center gap-1 transition cursor-pointer" title="Cambiar entre Bloc de notas clásico (claro) y modo oscuro">
+            <svg id="icon-moon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+            <svg id="icon-sun" class="w-3.5 h-3.5 hidden text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <span id="theme-label">Modo Oscuro</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Área de Escritura con Números de Línea -->
+      <div class="flex-1 flex overflow-hidden relative">
+        <div id="line-numbers" class="code-font py-3 px-2.5 bg-slate-50 text-slate-400 border-r border-slate-200 overflow-hidden shrink-0 select-none"><span>1</span></div>
+        <textarea
+          id="code-editor"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          autocorrect="off"
+          placeholder="Empieza escribiendo aquí tu código paso a paso..."
+          class="code-font flex-1 p-3 bg-white text-slate-800 select-text"
+        ></textarea>
+      </div>
+
+      <!-- BARRA INFERIOR DE GUÍA CONTINUA (PASO A PASO SIN ABRUMAR) -->
+      <div id="guided-bar" class="bg-amber-50 border-t-2 border-amber-300 px-3.5 py-2.5 shrink-0 select-text transition-all">
+        <div class="flex items-center justify-between gap-2 mb-1 flex-wrap">
+          <div class="flex items-center gap-2">
+            <span id="step-badge" class="bg-[#0E2A5A] text-white text-[11px] font-bold px-2 py-0.5 rounded-md">Paso 1 de 7</span>
+            <h3 id="step-title" class="font-bold text-xs sm:text-sm text-[#0E2A5A]">El cabezal del documento (!DOCTYPE y estructura)</h3>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-explain-code" type="button" class="px-2.5 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-semibold flex items-center gap-1 shadow-xs transition cursor-pointer" title="Ver explicación gráfica de cada línea y símbolo">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>Explicación líneas código</span>
+            </button>
+            <button id="btn-prev-step" type="button" class="px-2 py-1 rounded bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 text-[11px] font-medium disabled:opacity-40 cursor-pointer" title="Paso anterior">← Anterior</button>
+            <button id="btn-next-step" type="button" class="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold flex items-center gap-1 shadow-xs transition cursor-pointer">
+              <span id="next-step-label">Siguiente paso →</span>
+            </button>
+          </div>
+        </div>
+
+        <p id="step-desc" class="text-xs text-slate-700 leading-relaxed mb-1.5"></p>
+
+        <!-- Ejemplo corto de sintaxis que debe escribir el alumno -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white border border-amber-200/90 rounded-lg px-2.5 py-1.5">
+          <div class="min-w-0">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-amber-700 block">Cómo se escribe:</span>
+            <pre id="step-syntax" class="code-font text-[11px] text-slate-800 overflow-x-auto whitespace-pre leading-snug mt-0.5"></pre>
+          </div>
+          <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <span id="step-status" class="text-[11px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Pendiente</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de estado inferior del editor -->
+      <div id="editor-footer" class="bg-slate-50 border-t border-slate-200 px-3 py-1 flex items-center justify-between text-[11px] text-slate-500 shrink-0">
+        <span id="cursor-pos">Línea 1, Columna 1</span>
+        <span>Codificación: UTF-8 | Un solo archivo (.html)</span>
+      </div>
+    </section>
+
+    <!-- DIVISOR REDIMENSIONABLE (SOLO ESCRITORIO) -->
+    <div id="resizer" class="hidden md:block bg-slate-300 shrink-0 z-10" title="Arrastra para ajustar el ancho"></div>
+
+    <!-- PANEL DERECHO: VISTA PREVIA EN TIEMPO REAL -->
+    <section id="preview-pane" class="w-full md:w-1/2 h-1/2 md:h-full flex flex-col bg-slate-200/80">
+      <!-- Barra de Navegador Simulado -->
+      <div class="bg-slate-100 border-b border-slate-200 px-3 py-1.5 flex items-center justify-between gap-2 text-xs text-slate-600 shrink-0">
+        <div class="flex items-center gap-2 min-w-0">
+          <!-- Puntitos decorativos de ventana -->
+          <div class="hidden sm:flex items-center gap-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          </div>
+          <!-- Barra de dirección simulada -->
+          <div class="bg-white border border-slate-200 rounded-md px-2.5 py-0.5 text-[11px] text-slate-500 flex items-center gap-1.5 truncate">
+            <svg class="w-3 h-3 text-slate-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+            </svg>
+            <span id="preview-title-bar" class="truncate font-medium text-slate-700">Vista previa en tiempo real — index.html</span>
+          </div>
+        </div>
+
+        <!-- Controles Responsive y Pestaña Nueva -->
+        <div class="flex items-center gap-1 shrink-0">
+          <button id="btn-desktop" type="button" class="px-2 py-1 rounded bg-blue-100 text-blue-700 font-medium flex items-center gap-1 transition cursor-pointer" title="Vista Escritorio (100%)">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <span class="hidden sm:inline">Escritorio</span>
+          </button>
+
+          <button id="btn-mobile" type="button" class="px-2 py-1 rounded hover:bg-slate-200 text-slate-600 font-medium flex items-center gap-1 transition cursor-pointer" title="Simular Móvil (420px) para probar @media (max-width: 600px)">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+            <span class="hidden sm:inline">Móvil</span>
+          </button>
+
+          <button id="btn-newtab" type="button" class="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition cursor-pointer" title="Abrir vista previa en una pestaña nueva">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenedor del Iframe -->
+      <div class="flex-1 flex justify-center overflow-auto p-0 sm:p-2 bg-slate-200/70">
+        <div id="preview-wrapper" class="w-full h-full bg-white shadow-sm rounded-none sm:rounded-lg overflow-hidden border border-slate-300/80">
+          <iframe id="live-preview" title="Vista previa en tiempo real" class="w-full h-full border-0 bg-white"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL LATERAL DESPLEGABLE: CHULETA HTML & CSS (LECCIÓN 1) -->
+    <aside id="cheatsheet-drawer" class="fixed inset-y-0 right-0 w-full sm:w-96 bg-white shadow-2xl border-l border-slate-200 z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+      <div class="bg-[#0E2A5A] text-white px-4 py-3 flex items-center justify-between shrink-0">
+        <div>
+          <h2 class="font-bold text-sm">Chuleta Rápida — Lección 1</h2>
+          <p class="text-[11px] text-sky-200">Haz clic en "Copiar" para pegar en tu código</p>
+        </div>
+        <button id="close-cheatsheet" type="button" class="p-1.5 rounded-lg hover:bg-white/15 text-white cursor-pointer" title="Cerrar chuleta">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs select-text">
+        <!-- Bloque 1: Estructura -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/70">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-[#0E2A5A]">1. Cabezal obligatorio (!DOCTYPE)</span>
+            <button type="button" class="copy-snippet text-[11px] bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded font-semibold cursor-pointer" data-code="<!DOCTYPE html>&#10;<html lang=&quot;en&quot;>&#10;<head>&#10;  <meta charset=&quot;utf-8&quot;>&#10;  <title>Aquí escribes el título de la pestaña</title>&#10;  <style>&#10;    /* Aquí escribes tus reglas de diseño CSS */&#10;  </style>&#10;</head>&#10;<body>&#10;&#10;  <!-- Aquí dentro va todo lo que se ve en la página -->&#10;&#10;</body>&#10;</html>">Copiar</button>
+          </div>
+          <p class="text-slate-600 mb-2">Es la base de cualquier archivo <code class="bg-slate-200 px-1 rounded">.html</code>. Solo se pone una vez:</p>
+          <pre class="code-font text-[11px] bg-white border border-slate-200 rounded-lg p-2 text-slate-800 overflow-x-auto leading-relaxed">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;title&gt;Aquí escribes el título de la pestaña&lt;/title&gt;
+  &lt;style&gt;
+    /* Aquí escribes tus reglas de diseño CSS */
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+
+  &lt;!-- Aquí dentro va todo lo que se ve en la página --&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+        </div>
+
+        <!-- Bloque 2: Títulos H1 y H2 -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/70">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-[#0E2A5A]">2. Títulos y Subtítulos (&lt;h1&gt;, &lt;h2&gt;)</span>
+            <button type="button" class="copy-snippet text-[11px] bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded font-semibold cursor-pointer" data-code="<!-- Aquí introduces el título principal de la página -->&#10;<h1>Escribe aquí tu título principal</h1>&#10;&#10;<!-- Aquí introduces un subtítulo de sección -->&#10;<h2>Escribe aquí tu subtítulo</h2>">Copiar</button>
+          </div>
+          <pre class="code-font text-[11px] bg-white border border-slate-200 rounded-lg p-2 text-slate-800 overflow-x-auto leading-relaxed">&lt;!-- Aquí introduces el título principal de la página --&gt;
+&lt;h1&gt;Escribe aquí tu título principal&lt;/h1&gt;
+
+&lt;!-- Aquí introduces un subtítulo de sección --&gt;
+&lt;h2&gt;Escribe aquí tu subtítulo&lt;/h2&gt;</pre>
+        </div>
+
+        <!-- Bloque 3: Párrafos y Negrita -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/70">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-[#0E2A5A]">3. Párrafos y Negrita (&lt;p&gt;, &lt;strong&gt;)</span>
+            <button type="button" class="copy-snippet text-[11px] bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded font-semibold cursor-pointer" data-code="<!-- Aquí introduces tu párrafo de texto -->&#10;<p>Escribe aquí tu párrafo y destaca lo importante con <strong>palabra en negrita</strong>.</p>">Copiar</button>
+          </div>
+          <pre class="code-font text-[11px] bg-white border border-slate-200 rounded-lg p-2 text-slate-800 overflow-x-auto leading-relaxed">&lt;!-- Aquí introduces tu párrafo de texto --&gt;
+&lt;p&gt;Escribe aquí tu párrafo y destaca lo importante con &lt;strong&gt;palabra en negrita&lt;/strong&gt;.&lt;/p&gt;</pre>
+        </div>
+
+        <!-- Bloque 4: Lista de viñetas UL -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/70">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-[#0E2A5A]">4. Lista con puntitos (&lt;ul&gt;)</span>
+            <button type="button" class="copy-snippet text-[11px] bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded font-semibold cursor-pointer" data-code="<!-- Aquí introduces los elementos de tu lista con viñetas -->&#10;<ul>&#10;  <li>Aquí escribes el primer punto</li>&#10;  <li>Aquí escribes el segundo punto</li>&#10;  <li>Aquí escribes el tercer punto</li>&#10;</ul>">Copiar</button>
+          </div>
+          <pre class="code-font text-[11px] bg-white border border-slate-200 rounded-lg p-2 text-slate-800 overflow-x-auto leading-relaxed">&lt;!-- Aquí introduces los elementos de tu lista con viñetas --&gt;
+&lt;ul&gt;
+  &lt;li&gt;Aquí escribes el primer punto&lt;/li&gt;
+  &lt;li&gt;Aquí escribes el segundo punto&lt;/li&gt;
+  &lt;li&gt;Aquí escribes el tercer punto&lt;/li&gt;
+&lt;/ul&gt;</pre>
+        </div>
+
+        <!-- Bloque 5: Lista numerada OL -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/70">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-[#0E2A5A]">5. Lista numerada (&lt;ol&gt;)</span>
+            <button type="button" class="copy-snippet text-[11px] bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded font-semibold cursor-pointer" data-code="<!-- Aquí introduces los pasos ordenados (1, 2, 3...) -->&#10;<ol>&#10;  <li>Aquí escribes el paso 1</li>&#10;  <li>Aquí escribes el paso 2</li>&#10;  <li>Aquí escribes el paso 3</li>&#10;</ol>">Copiar</button>
+          </div>
+          <pre class="code-font text-[11px] bg-white border border-slate-200 rounded-lg p-2 text-slate-800 overflow-x-auto leading-relaxed">&lt;!-- Aquí introduces los pasos ordenados (1, 2, 3...) --&gt;
+&lt;ol&gt;
+  &lt;li&gt;Aquí escribes el paso 1&lt;/li&gt;
+  &lt;li&gt;Aquí escribes el paso 2&lt;/li&gt;
+  &lt;li&gt;Aquí escribes el paso 3&lt;/li&gt;
+&lt;/ol&gt;</pre>
+        </div>
+
+        <!-- Bloque 6: Imagen y Enlace -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/70">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-[#0E2A5A]">6. Imagen (&lt;img&gt;) y Enlace (&lt;a&gt;)</span>
+            <button type="button" class="copy-snippet text-[11px] bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded font-semibold cursor-pointer" data-code="<!-- Aquí introduces tu imagen -->&#10;<img src=&quot;https://placehold.co/520x190/0E2A5A/ffffff?text=AI+%2B+SEO&quot; alt=&quot;Descripción de la imagen&quot;>&#10;&#10;<!-- Aquí introduces tu enlace clicable -->&#10;<a href=&quot;https://www.uc3m.es&quot;>Aquí escribes el texto del enlace</a>">Copiar</button>
+          </div>
+          <pre class="code-font text-[11px] bg-white border border-slate-200 rounded-lg p-2 text-slate-800 overflow-x-auto leading-relaxed">&lt;!-- Aquí introduces tu imagen --&gt;
+&lt;img src="https://placehold.co/520x190/0E2A5A/ffffff?text=AI+%2B+SEO" alt="Descripción de la imagen"&gt;
+
+&lt;!-- Aquí introduces tu enlace clicable --&gt;
+&lt;a href="https://www.uc3m.es"&gt;Aquí escribes el texto del enlace&lt;/a&gt;</pre>
+        </div>
+
+        <!-- Bloque 7: Tabla -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/70">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-[#0E2A5A]">7. Tabla de datos (&lt;table&gt;)</span>
+            <button type="button" class="copy-snippet text-[11px] bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded font-semibold cursor-pointer" data-code="<!-- Aquí introduces tu tabla -->&#10;<table>&#10;  <tr>&#10;    <th>Columna 1</th>&#10;    <th>Columna 2</th>&#10;  </tr>&#10;  <tr>&#10;    <td>Dato fila 1</td>&#10;    <td>Descripción fila 1</td>&#10;  </tr>&#10;</table>">Copiar</button>
+          </div>
+          <pre class="code-font text-[11px] bg-white border border-slate-200 rounded-lg p-2 text-slate-800 overflow-x-auto leading-relaxed">&lt;!-- Aquí introduces tu tabla --&gt;
+&lt;table&gt;
+  &lt;tr&gt;
+    &lt;th&gt;Columna 1&lt;/th&gt;
+    &lt;th&gt;Columna 2&lt;/th&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;Dato fila 1&lt;/td&gt;
+    &lt;td&gt;Descripción fila 1&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;</pre>
+        </div>
+
+        <!-- Bloque 8: Reglas CSS básicas -->
+        <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/70">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-[#0E2A5A]">8. Estilos CSS (dentro de &lt;style&gt;)</span>
+            <button type="button" class="copy-snippet text-[11px] bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded font-semibold cursor-pointer" data-code="/* Pega esto dentro de <style> en el <head> */&#10;body { font-family: Arial, sans-serif; margin: 25px; }&#10;h1 { text-align: center; }&#10;img { max-width: 100%; border-radius: 12px; }&#10;table { width: 100%; border-collapse: collapse; background: #f3f4f6; }&#10;th, td { padding: 14px; text-align: left; border-bottom: 1px solid #ccc; }">Copiar</button>
+          </div>
+          <pre class="code-font text-[11px] bg-white border border-slate-200 rounded-lg p-2 text-slate-800 overflow-x-auto leading-relaxed">/* Pega esto dentro de &lt;style&gt; en el &lt;head&gt; */
+body { font-family: Arial, sans-serif; margin: 25px; }
+h1 { text-align: center; }
+img { max-width: 100%; border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; background: #f3f4f6; }
+th, td { padding: 14px; text-align: left; border-bottom: 1px solid #ccc; }</pre>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- MODAL DE OBJETIVO DE APRENDIZAJE (SOLO VISUALIZACIÓN DEL RESULTADO FINAL) -->
+  <div id="goal-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-6">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+      <!-- Cabecera Modal -->
+      <div class="bg-[#0E2A5A] text-white px-5 py-3.5 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-amber-400 text-slate-950 text-xs font-bold px-2 py-0.5 rounded">OBJETIVO FINAL</span>
+          <h2 class="font-bold text-sm sm:text-base">Así debe verse tu página cuando termines los 7 pasos</h2>
+        </div>
+        <button id="close-goal-modal" type="button" class="p-1.5 rounded-lg hover:bg-white/15 text-white cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Cuerpo Modal: Vista previa limpia del resultado final -->
+      <div class="flex-1 bg-slate-100 p-3 sm:p-5 overflow-hidden flex flex-col min-h-[380px]">
+        <div class="flex items-center justify-between mb-2.5 gap-2 flex-wrap">
+          <p class="text-xs text-slate-600">Haz scroll en la ventana para revisar toda la página que vamos a construir paso a paso:</p>
+          <button id="btn-start-progressive" type="button" class="bg-[#0E2A5A] hover:bg-[#163b7a] text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg transition cursor-pointer shadow-xs">
+            Empezar desde el Paso 1 en el editor
+          </button>
+        </div>
+        <div class="flex-1 bg-white rounded-xl border border-slate-300 overflow-hidden shadow-inner">
+          <iframe id="goal-iframe" title="Vista previa del objetivo" class="w-full h-full border-0"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL VISUAL: EXPLICACIÓN LÍNEAS DE CÓDIGO Y SÍMBOLOS DESDE CERO -->
+  <div id="explain-modal" class="fixed inset-0 bg-slate-900/65 backdrop-blur-xs z-50 hidden items-center justify-center p-3 sm:p-6">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200">
+      <!-- Cabecera -->
+      <div class="bg-sky-700 text-white px-5 py-3.5 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-white text-sky-900 text-xs font-bold px-2 py-0.5 rounded">GUÍA VISUAL</span>
+          <h2 id="explain-modal-title" class="font-bold text-sm sm:text-base">¿Qué significa cada símbolo y cada línea de código?</h2>
+        </div>
+        <button id="close-explain-modal" type="button" class="p-1.5 rounded-lg hover:bg-white/15 text-white cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Cuerpo explicativo visual -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-slate-50 select-text">
+        <!-- Bloque 1: Los símbolos básicos de HTML y CSS -->
+        <div>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-sky-800 mb-2.5 flex items-center gap-1.5">
+            <span>1. Los símbolos que vas a ver todo el rato (Nivel 0)</span>
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs">
+              <div class="code-font text-base font-bold text-sky-700 bg-sky-50 inline-block px-2 py-0.5 rounded mb-1">&lt; &gt;</div>
+              <p class="font-semibold text-xs text-slate-800">Los "paréntesis" del HTML</p>
+              <p class="text-[11px] text-slate-600 mt-1">Todo lo que va entre <code class="bg-slate-100 px-1 rounded">&lt;</code> y <code class="bg-slate-100 px-1 rounded">&gt;</code> es una orden oculta (etiqueta) para el navegador. El usuario nunca ve estos símbolos en la web.</p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs">
+              <div class="code-font text-base font-bold text-rose-700 bg-rose-50 inline-block px-2 py-0.5 rounded mb-1">&lt;/ &gt;</div>
+              <p class="font-semibold text-xs text-slate-800">La barra de cierre</p>
+              <p class="text-[11px] text-slate-600 mt-1">Funciona como un interruptor de apagar: <code class="bg-slate-100 px-1 rounded">&lt;h1&gt;</code> empieza el título y <code class="bg-slate-100 px-1 rounded">&lt;/h1&gt;</code> le dice al navegador dónde termina.</p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs">
+              <div class="code-font text-base font-bold text-amber-700 bg-amber-50 inline-block px-2 py-0.5 rounded mb-1">palabra="valor"</div>
+              <p class="font-semibold text-xs text-slate-800">Atributos y comillas</p>
+              <p class="text-[11px] text-slate-600 mt-1">Van dentro de la etiqueta de apertura para darle datos extra, como el idioma (<code class="bg-slate-100 px-1 rounded">lang="en"</code>) o a dónde lleva un enlace (<code class="bg-slate-100 px-1 rounded">href="..."</code>).</p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-2xs">
+              <div class="code-font text-base font-bold text-emerald-700 bg-emerald-50 inline-block px-2 py-0.5 rounded mb-1">{ prop: valor; }</div>
+              <p class="font-semibold text-xs text-slate-800">Llaves, dos puntos y punto y coma</p>
+              <p class="text-[11px] text-slate-600 mt-1">Solo se usan en CSS (diseño). Las llaves <code class="bg-slate-100 px-1 rounded">{ }</code> agrupan el diseño, los <code class="bg-slate-100 px-1 rounded">:</code> asignan el valor y el <code class="bg-slate-100 px-1 rounded">;</code> cierra cada regla.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bloque 2: Desglose línea por línea del paso actual -->
+        <div>
+          <h3 id="explain-step-heading" class="text-xs font-bold uppercase tracking-wider text-sky-800 mb-2.5">
+            2. Desglose línea a línea del paso actual
+          </h3>
+          <div id="explain-lines-list" class="space-y-2.5">
+            <!-- Se rellena dinámicamente según el paso en el que esté el alumno -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Pie del modal -->
+      <div class="bg-white border-t border-slate-200 px-5 py-3 flex items-center justify-between shrink-0">
+        <span class="text-xs text-slate-500">Consejo: Si escribes texto suelto sin etiquetas HTML, el navegador no sabrá cómo pintarlo.</span>
+        <button id="btn-close-explain-bottom" type="button" class="bg-sky-700 hover:bg-sky-600 text-white text-xs font-semibold px-4 py-2 rounded-lg cursor-pointer">¡Entendido, volver a escribir!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICACIÓN FLOTANTE (TOAST) -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-lg transform translate-y-16 opacity-0 transition-all duration-300 z-50 flex items-center gap-2 pointer-events-none">
+    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+    </svg>
+    <span id="toast-message">Acción completada</span>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. PLANTILLAS DE CÓDIGO (BASADAS EN EL PDF UC3M Y EL VÍDEO DE MOODLE)
+    // =========================================================================
+
+    // Imagen SVG embebida en Data URI (sin dependencias externas) que recrea el banner "AI + SEO" del vídeo
+    const AI_SEO_BANNER_SVG = "data:image/svg+xml;utf8," + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="600" height="220" viewBox="0 0 600 220">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#071938"/>
+            <stop offset="50%" stop-color="#114b8a"/>
+            <stop offset="100%" stop-color="#2b8cbe"/>
+          </linearGradient>
+        </defs>
+        <rect width="600" height="220" fill="url(#bg)"/>
+        <!-- Líneas decorativas de circuito -->
+        <g stroke="#38bdf8" stroke-opacity="0.25" stroke-width="2" fill="none">
+          <path d="M20 40 H110 L130 60 H180"/>
+          <circle cx="180" cy="60" r="4" fill="#38bdf8"/>
+          <path d="M10 170 H90 L115 145 H165"/>
+          <circle cx="165" cy="145" r="4" fill="#38bdf8"/>
+          <path d="M420 50 H490 L510 70 H580"/>
+          <path d="M440 165 H510 L535 140 H590"/>
+        </g>
+        <!-- Texto principal AI + SEO -->
+        <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="78" letter-spacing="4">AI + SEO</text>
+        <text x="50%" y="82%" dominant-baseline="middle" text-anchor="middle" fill="#bae6fd" font-family="Arial, Helvetica, sans-serif" font-size="14" letter-spacing="2">SEARCH ENGINE OPTIMIZATION FUNDAMENTALS</text>
+      </svg>
+    `);
+
+    const TEMPLATES = {
+      progressive: ``,
+
+      skeleton: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi primera página web</title>
+  <style>
+    /* Escribe aquí tus reglas CSS (como en el Bloc de notas) */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.5;
+    }
+
+    h1 {
+      color: #0E2A5A;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Escribe aquí el contenido visible de tu página -->
+  <h1>Hola, mundo</h1>
+  <p>Este es mi primer documento <strong>HTML</strong> con estilos <em>CSS</em>.</p>
+
+</body>
+</html>`,
+
+      guided: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Master Search Engine Optimization (SEO)</title>
+  <style>
+    /* =====================================================================
+       ZONA DE ESTILOS (CSS) — Aquí le damos forma y color a la página
+       ===================================================================== */
+
+    /* 1. Estilo general de la página:
+       Ponle un tipo de letra limpio (como Arial), deja margen por los lados
+       para que el texto no toque el borde y dale un interlineado cómodo. */
+
+
+    /* 2. Título principal (Paso 1):
+       Haz que el título grande de arriba quede centrado en medio de la pantalla. */
+
+
+    /* 3. Imagen del curso (Paso 2):
+       Haz que la imagen no se salga de la pantalla en móviles y redondea
+       un poco sus esquinas para que quede igual que en el ejemplo. */
+
+
+    /* 4. Tabla de módulos (Paso 4):
+       Haz que la tabla ocupe todo el ancho disponible, une sus bordes en una
+       sola línea limpia y dale un fondo gris muy suave. */
+
+
+    /* 5. Celdas de la tabla (Paso 4):
+       Dale aire por dentro (padding) a las celdas para que el texto respire
+       y alinea el texto de las cabeceras a la izquierda. */
+
+
+  </style>
+</head>
+<body>
+
+  <!-- =====================================================================
+       ZONA DEL CONTENIDO VISIBLE — Escribe cada bloque debajo de su comentario
+       ===================================================================== -->
+
+  <!-- PASO 1: EL TÍTULO PRINCIPAL
+       Escribe aquí el encabezado más importante de la página con el texto:
+       Master Search Engine Optimization (SEO) -->
+
+
+
+
+  <!-- PASO 2: PRESENTACIÓN DEL CURSO E IMAGEN
+       1) Pon un subtítulo de segundo nivel que diga: About This Course
+       2) Debajo escribe este párrafo destacando "SEO fundamentals" en negrita importante:
+          This course is your fast track to understanding SEO fundamentals. Stop guessing and start ranking. We cover the core concepts you need to get visible on Google.
+       3) Debajo inserta una imagen con su texto alternativo (alt) descriptivo.
+          (Pista: puedes usar cualquier imagen o copiar la dirección de imagen de la chuleta) -->
+
+
+
+
+  <!-- PASO 3: LO QUE VAS A APRENDER (LISTA CON PUNTITOS)
+       1) Pon un subtítulo de segundo nivel que diga: What You'll Learn
+       2) Debajo crea una lista desordenada (de viñetas) con estos 3 puntos:
+          - Keyword Research & Analysis
+          - On-Page and Technical SEO
+          - Link Building Strategies -->
+
+
+
+
+  <!-- PASO 4: MÓDULOS DEL CURSO (TABLA DE DATOS)
+       1) Pon un subtítulo de segundo nivel que diga: Course Modules
+       2) Debajo crea una tabla con una fila de cabecera (Module y Topic)
+          y 3 filas de datos debajo:
+          - Fila 1: 1 | Introduction to SEO
+          - Fila 2: 2 | Technical SEO Audit
+          - Fila 3: 3 | Content & Link Building -->
+
+
+
+
+  <!-- PASO 5: TUS PRIMEROS PASOS (LISTA NUMERADA)
+       1) Pon un subtítulo de segundo nivel que diga: Your First Steps
+       2) Debajo crea una lista ordenada (con números 1, 2, 3) con estos pasos:
+          1. Analyze your current website.
+          2. Find your first keywords.
+          3. Optimize one page. -->
+
+
+
+
+  <!-- PASO 6: INSCRIPCIÓN Y ENLACE FINAL
+       1) Pon un subtítulo de segundo nivel que diga: Enroll Now
+       2) Debajo escribe un párrafo que diga:
+          Ready to start? Sign Up Here and get immediate access.
+          Ojo: las palabras "Sign Up Here" tienen que ser un enlace clicable. -->
+
+
+
+
+</body>
+</html>`,
+
+      solution: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Master Search Engine Optimization (SEO)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 25px;
+      color: #1f2937;
+      line-height: 1.6;
+      background-color: #ffffff;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 26px;
+      margin-bottom: 24px;
+      color: #111827;
+    }
+
+    h2 {
+      font-size: 19px;
+      margin-top: 26px;
+      margin-bottom: 10px;
+      color: #111827;
+    }
+
+    .banner-seo {
+      display: block;
+      max-width: 100%;
+      width: 520px;
+      height: auto;
+      border-radius: 12px;
+      margin-top: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #f3f4f6;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid #d1d5db;
+    }
+
+    th {
+      font-weight: bold;
+      color: #111827;
+    }
+
+    a:link {
+      color: #2563eb;
+    }
+
+    a:hover {
+      color: #1d4ed8;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        margin: 15px;
+        font-size: 14px;
+      }
+      h1 {
+        font-size: 21px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Master Search Engine Optimization (SEO)</h1>
+
+  <h2>About This Course</h2>
+  <p>This course is your fast track to understanding <strong>SEO fundamentals</strong>. Stop guessing and start ranking. We cover the core concepts you need to get visible on Google.</p>
+  <img class="banner-seo" src="${AI_SEO_BANNER_SVG}" alt="AI + SEO Course Banner" width="520" height="190">
+
+  <h2>What You'll Learn</h2>
+  <ul>
+    <li>Keyword Research &amp; Analysis</li>
+    <li>On-Page and Technical SEO</li>
+    <li>Link Building Strategies</li>
+  </ul>
+
+  <h2>Course Modules</h2>
+  <table>
+    <tr>
+      <th scope="col">Module</th>
+      <th scope="col">Topic</th>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>Introduction to SEO</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Technical SEO Audit</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Content &amp; Link Building</td>
+    </tr>
+  </table>
+
+  <h2>Your First Steps</h2>
+  <ol>
+    <li>Analyze your current website.</li>
+    <li>Find your first keywords.</li>
+    <li>Optimize one page.</li>
+  </ol>
+
+  <h2>Enroll Now</h2>
+  <p>Ready to start? <a href="#enroll">Sign Up Here</a> and get immediate access.</p>
+
+</body>
+</html>`,
+
+      blank: ``
+    };
+
+    // =========================================================================
+    // 2. REFERENCIAS AL DOM Y ESTADO DEL EDITOR
+    // =========================================================================
+    const editor = document.getElementById('code-editor');
+    const lineNumbers = document.getElementById('line-numbers');
+    const previewFrame = document.getElementById('live-preview');
+    const previewTitleBar = document.getElementById('preview-title-bar');
+    const templateSelect = document.getElementById('template-select');
+    const cursorPos = document.getElementById('cursor-pos');
+    const saveIndicator = document.getElementById('save-indicator');
+    const editorPane = document.getElementById('editor-pane');
+    const editorHeader = document.getElementById('editor-header');
+    const editorFooter = document.getElementById('editor-footer');
+    const guidedBar = document.getElementById('guided-bar');
+
+    // =========================================================================
+    // 2B. DEFINICIÓN DEL RETO CONTINUO (7 PASOS PROGRESIVOS CON SINTAXIS REAL)
+    // =========================================================================
+    let currentStep = 1;
+
+    const CONTINUOUS_STEPS = {
+      1: {
+        title: 'Paso 1: El cabezal del documento (!DOCTYPE y estructura)',
+        desc: 'Toda página web empieza avisando al navegador de que usamos HTML5 con <!DOCTYPE html>, seguido de <html>, <head> (con <meta charset="utf-8">, <title> y <style>) y <body>. Escribe esta base limpia para arrancar:',
+        syntax: `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <title>Master Search Engine Optimization (SEO)</title>\n  <style>\n    body { font-family: Arial, sans-serif; margin: 25px; line-height: 1.6; }\n  </style>\n</head>\n<body>\n\n</body>\n</html>`,
+        check: (code) => /<!doctype\s+html>/i.test(code) && /<html/i.test(code) && /<head>/i.test(code) && /<body>/i.test(code) && /<\/body>/i.test(code)
+      },
+      2: {
+        title: 'Paso 2: El título principal centrado (<h1>)',
+        desc: 'Ahora, dentro de <body>, escribe el título principal con <h1>. Para que aparezca centrado en la página, añade también la regla h1 { text-align: center; } dentro de <style> arriba:',
+        syntax: `/* Dentro de <style>: */\nh1 { text-align: center; }\n\n<!-- Dentro de <body>: -->\n<h1>Master Search Engine Optimization (SEO)</h1>`,
+        check: (code) => /<h1[^>]*>[\s\S]*Master Search Engine Optimization/i.test(code) && /text-align\s*:\s*center/i.test(code)
+      },
+      3: {
+        title: 'Paso 3: Presentación del curso e imagen (<h2>, <p>, <strong>, <img>)',
+        desc: 'Debajo del <h1>, añade el subtítulo <h2>About This Course</h2>, un párrafo destacando "SEO fundamentals" con <strong> y una imagen <img> con texto alternativo alt:',
+        syntax: `<h2>About This Course</h2>\n<p>This course is your fast track to understanding <strong>SEO fundamentals</strong>. Stop guessing and start ranking. We cover the core concepts you need to get visible on Google.</p>\n<img src="https://placehold.co/520x190/0E2A5A/ffffff?text=AI+%2B+SEO" alt="AI + SEO Banner" style="max-width:100%; border-radius:12px;">`,
+        check: (code) => /<h2[^>]*>[\s\S]*About This Course/i.test(code) && /<strong[^>]*>[\s\S]*SEO fundamentals/i.test(code) && /<img[^>]+alt=/i.test(code)
+      },
+      4: {
+        title: 'Paso 4: Lista de lo que vas a aprender (<ul> y <li>)',
+        desc: 'Debajo de la imagen, añade el subtítulo <h2>What You\'ll Learn</h2> y una lista de viñetas <ul> con los tres puntos dentro de etiquetas <li>:',
+        syntax: `<h2>What You'll Learn</h2>\n<ul>\n  <li>Keyword Research &amp; Analysis</li>\n  <li>On-Page and Technical SEO</li>\n  <li>Link Building Strategies</li>\n</ul>`,
+        check: (code) => /<ul[^>]*>[\s\S]*<li[^>]*>[\s\S]*<\/ul>/i.test(code)
+      },
+      5: {
+        title: 'Paso 5: Tabla de módulos del curso (<table>, <tr>, <th>, <td>)',
+        desc: 'Crea el subtítulo <h2>Course Modules</h2> y una tabla con cabecera (Module y Topic) y 3 filas. En <style>, dale width: 100%, border-collapse: collapse y padding a th, td:',
+        syntax: `/* En <style>: table { width: 100%; border-collapse: collapse; background: #f3f4f6; } th, td { padding: 14px; text-align: left; border-bottom: 1px solid #ccc; } */\n<h2>Course Modules</h2>\n<table>\n  <tr><th>Module</th><th>Topic</th></tr>\n  <tr><td>1</td><td>Introduction to SEO</td></tr>\n  <tr><td>2</td><td>Technical SEO Audit</td></tr>\n  <tr><td>3</td><td>Content &amp; Link Building</td></tr>\n</table>`,
+        check: (code) => /<table[^>]*>[\s\S]*<th[^>]*>[\s\S]*<td[^>]*>[\s\S]*<\/table>/i.test(code)
+      },
+      6: {
+        title: 'Paso 6: Tus primeros pasos en orden (<ol> y <li>)',
+        desc: 'Debajo de la tabla, añade <h2>Your First Steps</h2> y una lista numerada <ol> con los 3 pasos en orden (el navegador pondrá los números 1, 2 y 3 solo):',
+        syntax: `<h2>Your First Steps</h2>\n<ol>\n  <li>Analyze your current website.</li>\n  <li>Find your first keywords.</li>\n  <li>Optimize one page.</li>\n</ol>`,
+        check: (code) => /<ol[^>]*>[\s\S]*<li[^>]*>[\s\S]*<\/ol>/i.test(code)
+      },
+      7: {
+        title: 'Paso 7: Llamada a la acción y enlace final (<a href="...">)',
+        desc: 'Para terminar toda la página, añade <h2>Enroll Now</h2> y un párrafo donde las palabras "Sign Up Here" sean un enlace clicable con la etiqueta <a>:',
+        syntax: `<h2>Enroll Now</h2>\n<p>Ready to start? <a href="#enroll">Sign Up Here</a> and get immediate access.</p>`,
+        check: (code) => /<a\s+[^>]*href=/i.test(code) && /Sign Up Here/i.test(code)
+      }
+    };
+
+    // Explicaciones detalladas línea por línea y símbolo por símbolo para cada paso
+    const STEP_EXPLANATIONS = {
+      1: [
+        {
+          code: '<!DOCTYPE html>',
+          role: 'El aviso inicial obligatorio (Siempre línea 1)',
+          when: 'Se pone una sola vez al principio del todo (Línea 1), antes de abrir ninguna otra etiqueta.',
+          why: 'Le dice al navegador (Chrome, Edge, Safari): "Oye, este archivo está escrito en HTML moderno (HTML5), léelo con las reglas actuales".'
+        },
+        {
+          code: '<html lang="en"> ... </html>',
+          role: 'La caja gigante que envuelve toda la web',
+          when: 'Abre justo debajo de <code>&lt;!DOCTYPE html&gt;</code> y se cierra con <code>&lt;/html&gt;</code> en la última línea del archivo.',
+          why: 'Todo tu código tiene que vivir dentro. El atributo lang="en" le indica a Google y a los lectores de voz en qué idioma está escrita la página.'
+        },
+        {
+          code: '<head> ... </head>',
+          role: 'El "cerebro" invisible de la página',
+          when: 'Va dentro de <code>&lt;html&gt;</code>, en la parte de arriba, antes de abrir <code>&lt;body&gt;</code>.',
+          why: 'Aquí van las configuraciones internas que el usuario no ve dentro de la hoja blanca: codificación de letras, título de la pestaña y estilos CSS.'
+        },
+        {
+          code: '<meta charset="utf-8">',
+          role: 'El traductor de tildes, eñes y símbolos',
+          when: 'Siempre dentro de <code>&lt;head&gt;</code>, arriba del todo. Es una etiqueta "vacía" (no lleva cierre).',
+          why: 'Activa el alfabeto universal UTF-8. Sin esta línea, palabras con tildes ("canción"), la letra "ñ" o el símbolo "€" saldrían con símbolos raros.'
+        },
+        {
+          code: '<title>Master Search Engine Optimization (SEO)</title>',
+          role: 'El nombre de la pestaña del navegador',
+          when: 'Dentro de <code>&lt;head&gt;</code>, debajo de la etiqueta <code>&lt;meta&gt;</code>.',
+          why: 'Es el texto que aparece arriba en la pestañita del navegador y el título azul que muestra Google cuando busca tu página.'
+        },
+        {
+          code: '<style> body { font-family: Arial, sans-serif; margin: 25px; line-height: 1.6; } </style>',
+          role: 'El departamento de diseño (CSS interno)',
+          when: 'Dentro de <code>&lt;head&gt;</code>, justo antes de cerrar <code>&lt;/head&gt;</code>.',
+          why: 'Todo lo que escribas dentro de <code>&lt;style&gt;</code> sirve para decorar. Aquí le decimos a toda la zona visible (body) que use letra Arial, deje 25px de aire en los bordes y separe las líneas 1.6 veces.'
+        },
+        {
+          code: '<body> ... </body>',
+          role: 'La hoja en blanco donde va todo lo visible',
+          when: 'Justo debajo de cerrar <code>&lt;/head&gt;</code> y antes de cerrar <code>&lt;/html&gt;</code> al final.',
+          why: 'Todo lo que el usuario ve y lee en la página (títulos, párrafos, imágenes, listas, tablas) tiene que escribirse obligatoriamente aquí dentro.'
+        }
+      ],
+      2: [
+        {
+          code: 'h1 { text-align: center; }',
+          role: 'Regla CSS para centrar el título',
+          when: 'Se escribe dentro de las etiquetas <code>&lt;style&gt;...&lt;/style&gt;</code> (en el <code>&lt;head&gt;</code>).',
+          why: 'Seleccionamos la etiqueta h1 y entre llaves { } le damos la orden text-align: center; para que el texto se coloque justo en el centro horizontal.'
+        },
+        {
+          code: '<h1>Master Search Engine Optimization (SEO)</h1>',
+          role: 'El titular principal de la página',
+          when: 'Dentro de <code>&lt;body&gt;</code>, arriba del todo como primer elemento visible.',
+          why: '<code>&lt;h1&gt;</code> significa Heading 1 (Encabezado 1). Es el título más importante de toda la web; por buena práctica y SEO solo se pone uno por página.'
+        }
+      ],
+      3: [
+        {
+          code: '<h2>About This Course</h2>',
+          role: 'Subtítulo de sección',
+          when: 'Dentro de <code>&lt;body&gt;</code>, justo debajo del título principal <code>&lt;h1&gt;</code>.',
+          why: '<code>&lt;h2&gt;</code> es un encabezado de segundo nivel. Sirve para dividir la página en apartados claros después del título principal.'
+        },
+        {
+          code: '<p> ... <strong>SEO fundamentals</strong> ... </p>',
+          role: 'Párrafo de texto con palabra clave destacada',
+          when: 'Dentro de <code>&lt;body&gt;</code>, justo debajo del subtítulo <code>&lt;h2&gt;</code>.',
+          why: '<code>&lt;p&gt;</code> crea un bloque de párrafo con espacio arriba y abajo. <code>&lt;strong&gt;</code> pone en negrita e indica a Google que esas palabras son muy importantes.'
+        },
+        {
+          code: '<img src="..." alt="AI + SEO Banner">',
+          role: 'Insertar una imagen accesible',
+          when: 'Dentro de <code>&lt;body&gt;</code>, justo debajo del párrafo <code>&lt;p&gt;</code>. No lleva etiqueta de cierre.',
+          why: 'src="..." indica la ruta o dirección de la imagen. alt="..." es obligatorio: describe la foto para personas ciegas y para buscadores.'
+        }
+      ],
+      4: [
+        {
+          code: '<ul> ... </ul>',
+          role: 'Lista desordenada (con puntitos / viñetas)',
+          when: 'Dentro de <code>&lt;body&gt;</code>, debajo del subtítulo <code>&lt;h2&gt;What You\'ll Learn&lt;/h2&gt;</code>.',
+          why: 'Viene de Unordered List. Crea el contenedor de la lista con puntos negros a la izquierda.'
+        },
+        {
+          code: '<li>Keyword Research &amp; Analysis</li>',
+          role: 'Cada elemento individual de la lista',
+          when: 'Siempre dentro de <code>&lt;ul&gt;</code> o de <code>&lt;ol&gt;</code> (una etiqueta por cada punto).',
+          why: 'Viene de List Item. Cada frase que quieras con su propio puntito tiene que ir envuelta en su propia etiqueta <code>&lt;li&gt;...&lt;/li&gt;</code>.'
+        }
+      ],
+      5: [
+        {
+          code: 'table { width: 100%; border-collapse: collapse; }',
+          role: 'Estilo CSS de la tabla completa',
+          when: 'Arriba, dentro de las etiquetas <code>&lt;style&gt;...&lt;/style&gt;</code> en el <code>&lt;head&gt;</code>.',
+          why: 'width: 100% hace que ocupe todo el ancho disponible, y border-collapse: collapse fusiona los bordes dobles en una sola línea limpia.'
+        },
+        {
+          code: '<table> ... </table>',
+          role: 'Contenedor de datos en filas y columnas',
+          when: 'Dentro de <code>&lt;body&gt;</code>, debajo de <code>&lt;h2&gt;Course Modules&lt;/h2&gt;</code>.',
+          why: 'Indica al navegador que empieza una tabla de datos (nunca se usa para maquetar toda la web).'
+        },
+        {
+          code: '<tr> ... </tr>',
+          role: 'Una fila horizontal de la tabla',
+          when: 'Siempre dentro de <code>&lt;table&gt;</code> (pon una etiqueta <code>&lt;tr&gt;</code> por cada línea horizontal).',
+          why: 'Viene de Table Row. Dentro de cada <code>&lt;tr&gt;</code> irán las celdas de esa fila.'
+        },
+        {
+          code: '<th>Module</th>  y  <td>1</td>',
+          role: 'Celdas de cabecera (<th>) y celdas de datos (<td>)',
+          when: 'Siempre dentro de cada fila <code>&lt;tr&gt;</code> (<code>&lt;th&gt;</code> en la primera fila y <code>&lt;td&gt;</code> en las siguientes).',
+          why: '<code>&lt;th&gt;</code> (Table Header) pone el texto en negrita para los títulos de columna; <code>&lt;td&gt;</code> (Table Data) contiene cada dato normal.'
+        }
+      ],
+      6: [
+        {
+          code: '<ol> ... </ol>',
+          role: 'Lista ordenada (numerada automáticamente)',
+          when: 'Dentro de <code>&lt;body&gt;</code>, debajo de <code>&lt;h2&gt;Your First Steps&lt;/h2&gt;</code> (y dentro llevarán sus <code>&lt;li&gt;</code>).',
+          why: 'Viene de Ordered List. No hace falta que escribas los números a mano: el navegador numera cada <code>&lt;li&gt;</code> automáticamente.'
+        }
+      ],
+      7: [
+        {
+          code: '<a href="#enroll">Sign Up Here</a>',
+          role: 'Enlace clicable (Hipervínculo)',
+          when: 'Dentro de un párrafo <code>&lt;p&gt;</code> en el <code>&lt;body&gt;</code>, rodeando las palabras que quieres que sean clicables.',
+          why: '<code>&lt;a&gt;</code> viene de Anchor (ancla). El atributo href="..." guarda la dirección web de destino, y el texto interior es lo que se ve azul y subrayado.'
+        }
+      ]
+    };
+
+    function explainSingleLine(rawLine, lineNumber) {
+      const line = rawLine.trim();
+      if (!line) return null;
+
+      if (/^<!doctype\s+html>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Declaración de documento HTML5',
+          why: 'Es el aviso obligatorio de la primera línea. Le dice al navegador que este documento usa el estándar moderno HTML5 para que no lo interprete como una web antigua de los años 90.'
+        };
+      }
+      if (/^<html/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Apertura de la raíz de toda la página',
+          why: 'Todo el código HTML vive dentro de <html>. Si lleva lang="en" o lang="es", le indica a Google y a los lectores de voz en qué idioma está escrita la página.'
+        };
+      }
+      if (/^<\/html>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Cierre final de la página',
+          why: 'La barra inclinada (/) indica que aquí termina el documento HTML completo. Nada debe escribirse después de esta línea.'
+        };
+      }
+      if (/^<head>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Apertura de la cabecera invisible (<head>)',
+          why: 'Aquí empieza la zona de configuración interna (título de pestaña, tildes, estilos CSS). Lo que pongas aquí dentro NO se dibuja en la hoja blanca.'
+        };
+      }
+      if (/^<\/head>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Cierre de la cabecera (<head>)',
+          why: 'Indica que ya terminamos de configurar la página y que a continuación empezará el contenido visible (<body>).'
+        };
+      }
+      if (/^<meta\s+charset/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Codificación de caracteres UTF-8',
+          why: 'Permite que se vean bien las tildes (á, é, í, ó, ú), la ñ y símbolos como €. No lleva etiqueta de cierre porque es una orden directa de configuración.'
+        };
+      }
+      if (/^<meta\s+name=["']viewport/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Adaptación a pantallas móviles (Viewport)',
+          why: 'Le dice al teléfono móvil que ajuste el ancho de la web al tamaño real de su pantalla en lugar de verse minúscula.'
+        };
+      }
+      if (/^<title>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Título de la pestaña del navegador',
+          why: 'Define el nombre que aparece arriba en la pestaña del navegador y en los resultados de búsqueda de Google.'
+        };
+      }
+      if (/^<style>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Inicio del bloque de diseño CSS',
+          why: 'Cambia el idioma de HTML (estructura) a CSS (colores, tamaños, márgenes). Todo lo que escribas dentro hasta </style> serán reglas visuales.'
+        };
+      }
+      if (/^<\/style>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Fin del bloque de diseño CSS',
+          why: 'Cierra la zona de estilos para volver a escribir etiquetas HTML normales.'
+        };
+      }
+      if (/^<body>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Apertura del cuerpo visible (<body>)',
+          why: 'Aquí empieza el lienzo blanco que ve el usuario. Todos los títulos, textos, imágenes, listas y tablas deben ir dentro de <body>.'
+        };
+      }
+      if (/^<\/body>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Cierre del cuerpo visible (<body>)',
+          why: 'Marca el final de todo el contenido visible de la página.'
+        };
+      }
+      if (/^<!--/.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Comentario para el programador',
+          why: 'Todo lo que va entre <!-- y --> es una nota invisible para ti. El navegador lo ignora por completo y no lo muestra en pantalla.'
+        };
+      }
+      if (/^<h1/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Encabezado principal (<h1>)',
+          why: 'Es el titular más grande e importante de toda la web. Por orden y SEO se usa solo uno por página.'
+        };
+      }
+      if (/^<h[2-6]/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Subtítulo de sección (<h2> - <h6>)',
+          why: 'Sirve para dividir el contenido en apartados jerárquicos debajo del título principal.'
+        };
+      }
+      if (/^<p/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Párrafo de texto (<p>)',
+          why: 'Agrupa frases en un bloque de texto con separación automática arriba y abajo. Si contiene <strong>, resalta palabras clave en negrita.'
+        };
+      }
+      if (/^<img/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Inserción de imagen (<img>)',
+          why: 'Muestra una imagen. El atributo src="..." indica dónde está la foto y alt="..." explica qué aparece en ella por accesibilidad y SEO. No lleva etiqueta de cierre.'
+        };
+      }
+      if (/^<ul/i.test(line) || /^<\/ul>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Lista desordenada con viñetas (<ul>)',
+          why: 'Envuelve una lista donde el orden no importa y muestra puntitos a la izquierda de cada elemento <li>.'
+        };
+      }
+      if (/^<ol/i.test(line) || /^<\/ol>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Lista ordenada numerada (<ol>)',
+          why: 'Envuelve una lista secuencial y numera automáticamente cada elemento <li> (1, 2, 3...).'
+        };
+      }
+      if (/^<li/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Elemento individual de lista (<li>)',
+          why: 'Representa cada punto o fila dentro de una lista <ul> o <ol>.'
+        };
+      }
+      if (/^<table/i.test(line) || /^<\/table>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Contenedor de tabla de datos (<table>)',
+          why: 'Inicia o cierra una tabla organizada en filas (<tr>) y celdas (<th> / <td>).'
+        };
+      }
+      if (/^<tr/i.test(line) || /^<\/tr>/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Fila horizontal de la tabla (<tr>)',
+          why: 'Agrupa todas las celdas que van en una misma línea horizontal dentro de la tabla.'
+        };
+      }
+      if (/^<th/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Celda de cabecera de tabla (<th>)',
+          why: 'Define el título de una columna o fila. El navegador la pone en negrita automáticamente.'
+        };
+      }
+      if (/^<td/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Celda de dato normal (<td>)',
+          why: 'Contiene cada dato individual dentro de una fila de la tabla.'
+        };
+      }
+      if (/<a\s/i.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Enlace clicable (<a>)',
+          why: 'Crea un hipervínculo. El atributo href="..." indica el destino al hacer clic y el texto interior es lo que el usuario pulsa.'
+        };
+      }
+      if (/\{.*\}/.test(line) || /:\s*[^;]+;/.test(line)) {
+        return {
+          lineNumber,
+          code: rawLine,
+          title: 'Regla de estilo visual (CSS)',
+          why: 'Da instrucciones de diseño: indica a qué etiqueta afecta, qué propiedad cambia (color, margen, alineación) antes de los dos puntos (:) y qué valor aplica antes del punto y coma (;).'
+        };
+      }
+
+      return {
+        lineNumber,
+        code: rawLine,
+        title: 'Línea de código / contenido',
+        why: 'Forma parte de la estructura o del texto dentro de sus etiquetas correspondientes.'
+      };
+    }
+
+    function renderExplainModal() {
+      const stepData = CONTINUOUS_STEPS[currentStep];
+      const titleEl = document.getElementById('explain-modal-title');
+      const headingEl = document.getElementById('explain-step-heading');
+      const listEl = document.getElementById('explain-lines-list');
+
+      const userLines = editor.value.split('\n');
+      const analyzedUserLines = userLines
+        .map((line, idx) => explainSingleLine(line, idx + 1))
+        .filter(Boolean);
+
+      if (analyzedUserLines.length > 0) {
+        titleEl.textContent = 'Explicación línea por línea de TU código actual';
+        headingEl.textContent = `2. Análisis de las ${analyzedUserLines.length} líneas que tienes escritas ahora mismo en el editor`;
+
+        listEl.innerHTML = analyzedUserLines.map(item => `
+          <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5 pb-1.5 border-b border-slate-100">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="bg-slate-800 text-white text-[10px] font-bold px-2 py-0.5 rounded shrink-0">Línea ${item.lineNumber}</span>
+                <code class="code-font text-xs font-bold text-[#0E2A5A] bg-slate-100 px-2 py-0.5 rounded break-all">${item.code.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>
+              </div>
+              <span class="text-[11px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-0.5 rounded-full">${item.title}</span>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed"><strong class="text-slate-800">Qué hace y por qué es así:</strong> ${item.why}</p>
+          </div>
+        `).join('');
+      } else {
+        const lines = STEP_EXPLANATIONS[currentStep] || [];
+        titleEl.textContent = `Explicación visual — ${stepData ? stepData.title : 'Código HTML & CSS'}`;
+        headingEl.textContent = `2. Tu editor está vacío: aquí tienes qué hace cada línea del Paso ${currentStep}`;
+
+        listEl.innerHTML = lines.map(item => `
+          <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-2xs">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
+              <code class="code-font text-xs sm:text-sm font-bold text-[#0E2A5A] bg-slate-100 px-2.5 py-1 rounded-md break-all">${item.code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code>
+              <span class="text-[11px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-0.5 rounded-full">${item.role}</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+              <p><strong class="text-slate-800">¿Para qué sirve?</strong> ${item.why}</p>
+              <p><strong class="text-slate-800">¿Cuándo y dónde se pone?</strong> ${item.when}</p>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    const explainModal = document.getElementById('explain-modal');
+    document.getElementById('btn-explain-code').addEventListener('click', () => {
+      renderExplainModal();
+      explainModal.classList.remove('hidden');
+      explainModal.classList.add('flex');
+    });
+
+    function closeExplainModal() {
+      explainModal.classList.add('hidden');
+      explainModal.classList.remove('flex');
+    }
+
+    document.getElementById('close-explain-modal').addEventListener('click', closeExplainModal);
+    document.getElementById('btn-close-explain-bottom').addEventListener('click', closeExplainModal);
+    explainModal.addEventListener('click', (e) => {
+      if (e.target === explainModal) closeExplainModal();
+    });
+
+    function renderContinuousStep() {
+      const totalSteps = Object.keys(CONTINUOUS_STEPS).length;
+      const stepData = CONTINUOUS_STEPS[currentStep];
+      if (!stepData) return;
+
+      document.getElementById('step-badge').textContent = `Paso ${currentStep} de ${totalSteps}`;
+      document.getElementById('step-title').textContent = stepData.title;
+      document.getElementById('step-desc').textContent = stepData.desc;
+      document.getElementById('step-syntax').textContent = stepData.syntax;
+
+      const btnPrev = document.getElementById('btn-prev-step');
+      const btnNext = document.getElementById('btn-next-step');
+      const nextLabel = document.getElementById('next-step-label');
+
+      btnPrev.disabled = currentStep === 1;
+      nextLabel.textContent = currentStep === totalSteps ? '¡Completado! ★' : 'Siguiente paso →';
+
+      checkCurrentStepCompletion();
+    }
+
+    function checkCurrentStepCompletion() {
+      const stepData = CONTINUOUS_STEPS[currentStep];
+      const statusBadge = document.getElementById('step-status');
+      if (!stepData || !statusBadge) return;
+
+      const isDone = stepData.check(editor.value);
+      if (isDone) {
+        statusBadge.textContent = '✓ ¡Listo! Puedes avanzar';
+        statusBadge.className = 'text-[11px] font-semibold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full';
+      } else {
+        statusBadge.textContent = 'Escribiendo...';
+        statusBadge.className = 'text-[11px] font-semibold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full';
+      }
+    }
+
+    document.getElementById('btn-prev-step').addEventListener('click', () => {
+      if (currentStep > 1) {
+        currentStep--;
+        renderContinuousStep();
+      }
+    });
+
+    document.getElementById('btn-next-step').addEventListener('click', () => {
+      const totalSteps = Object.keys(CONTINUOUS_STEPS).length;
+      if (currentStep < totalSteps) {
+        currentStep++;
+        renderContinuousStep();
+        showToast(`Avanzaste al Paso ${currentStep}`);
+      } else {
+        showToast('¡Enhorabuena! Has completado toda la página web');
+      }
+    });
+
+    // =========================================================================
+    // 3. ACTUALIZACIÓN EN TIEMPO REAL Y NUMERACIÓN DE LÍNEAS
+    // =========================================================================
+    function updateLineNumbers() {
+      const linesCount = editor.value.split('\n').length || 1;
+      const currentCount = lineNumbers.children.length;
+
+      if (linesCount > currentCount) {
+        const fragment = document.createDocumentFragment();
+        for (let i = currentCount + 1; i <= linesCount; i++) {
+          const span = document.createElement('span');
+          span.textContent = i;
+          fragment.appendChild(span);
+        }
+        lineNumbers.appendChild(fragment);
+      } else if (linesCount < currentCount) {
+        while (lineNumbers.children.length > linesCount) {
+          lineNumbers.removeChild(lineNumbers.lastChild);
+        }
+      }
+    }
+
+    function updatePreview() {
+      const code = editor.value;
+      const trimmed = code.trim();
+
+      // Validar que exista estructura HTML real antes de renderizar texto suelto
+      const hasDoctype = /<!doctype\s+html>/i.test(trimmed);
+      const hasHtmlTags = /<html[\s>]/i.test(trimmed) && /<body[\s>]/i.test(trimmed);
+      const hasAnyHtmlElement = /<(h[1-6]|p|div|span|ul|ol|li|table|img|a|header|main|section|article|footer|form|button|strong|em|b|i)\b[^>]*>/i.test(trimmed);
+
+      if (trimmed === '') {
+        previewFrame.srcdoc = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; color: #64748b; display: flex; align-items: center; justify-content: center; height: 90vh; text-align: center; padding: 20px;"><div><p style="font-size: 15px; font-weight: bold; color: #334155; margin-bottom: 6px;">Lienzo del navegador en blanco</p><p style="font-size: 13px;">Escribe código HTML con sus etiquetas (<code>&lt;!DOCTYPE html&gt;</code>, <code>&lt;html&gt;</code>, <code>&lt;body&gt;</code>...) en la izquierda para ver el resultado aquí.</p></div></body></html>`;
+      } else if (!hasDoctype || !hasHtmlTags) {
+        // Si escribe texto plano o etiquetas sueltas sin el cabezal HTML obligatorio, no lo pinta como web válida y le avisa
+        previewFrame.srcdoc = `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; background: #fffbeb; color: #92400e; display: flex; align-items: center; justify-content: center; height: 90vh; text-align: center; padding: 24px;"><div style="max-width: 420px; background: #ffffff; border: 1px solid #fcd34d; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);"><p style="font-size: 15px; font-weight: bold; color: #b45309; margin-top: 0;">Falta la estructura HTML básica</p><p style="font-size: 13px; color: #475569; line-height: 1.5;">Escribir texto suelto sin etiquetas no crea una página web.<br><br>Asegúrate de incluir primero:<br><code>&lt;!DOCTYPE html&gt;</code>, <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code> y <code>&lt;body&gt;</code> (o revisa el botón <strong>"Explicación líneas código"</strong>).</p></div></body></html>`;
+      } else if (!hasAnyHtmlElement) {
+        // Tiene la estructura vacía (Paso 1 completado), muestra la hoja en blanco limpia lista para añadir contenido
+        previewFrame.srcdoc = code;
+      } else {
+        previewFrame.srcdoc = code;
+      }
+
+      // Extraer el <title> del código del usuario para mostrarlo en la barra superior
+      const titleMatch = code.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      if (titleMatch && titleMatch[1].trim() !== '') {
+        previewTitleBar.textContent = `${titleMatch[1].trim()} — index.html`;
+      } else {
+        previewTitleBar.textContent = 'Vista previa en tiempo real — index.html';
+      }
+
+      // Guardar en localStorage para no perder avances si se recarga
+      try {
+        localStorage.setItem('notepad_web_code', code);
+        saveIndicator.textContent = '● Sincronizado';
+      } catch (e) {}
+    }
+
+    function updateCursorPosition() {
+      const textBeforeCursor = editor.value.substring(0, editor.selectionStart);
+      const lines = textBeforeCursor.split('\n');
+      const currentLine = lines.length;
+      const currentCol = lines[lines.length - 1].length + 1;
+      cursorPos.textContent = `Línea ${currentLine}, Columna ${currentCol}`;
+    }
+
+    function loadTemplate(templateKey) {
+      if (!(templateKey in TEMPLATES)) return;
+      editor.value = TEMPLATES[templateKey];
+      templateSelect.value = templateKey;
+      updateLineNumbers();
+      updatePreview();
+      updateCursorPosition();
+    }
+
+    // Eventos del editor
+    editor.addEventListener('input', () => {
+      updateLineNumbers();
+      updatePreview();
+      updateCursorPosition();
+      checkCurrentStepCompletion();
+    });
+
+    editor.addEventListener('scroll', () => {
+      lineNumbers.scrollTop = editor.scrollTop;
+    });
+
+    editor.addEventListener('click', updateCursorPosition);
+    editor.addEventListener('keyup', updateCursorPosition);
+
+    // Soporte para tecla Tab (insertar 2 espacios sin perder el foco)
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+        editor.selectionStart = editor.selectionEnd = start + 2;
+        updateLineNumbers();
+        updatePreview();
+        updateCursorPosition();
+      }
+    });
+
+    // =========================================================================
+    // 4. SELECTOR DE PLANTILLAS Y ACCIONES DE ARCHIVO (COPIAR / DESCARGAR)
+    // =========================================================================
+    templateSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      loadTemplate(val);
+      if (val === 'progressive') {
+        guidedBar.classList.remove('hidden');
+        currentStep = 1;
+        renderContinuousStep();
+        showToast('Reto continuo iniciado: empieza por el Paso 1 (<!DOCTYPE html>)');
+      } else {
+        guidedBar.classList.add('hidden');
+        showToast('Plantilla cargada en el editor');
+      }
+    });
+
+    function copyTextFallback(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
+      const activeEl = document.activeElement;
+      const tempTextArea = document.createElement('textarea');
+      tempTextArea.value = text;
+      tempTextArea.setAttribute('readonly', '');
+      tempTextArea.style.position = 'fixed';
+      tempTextArea.style.top = '0';
+      tempTextArea.style.left = '-9999px';
+      document.body.appendChild(tempTextArea);
+      tempTextArea.focus();
+      tempTextArea.select();
+      tempTextArea.setSelectionRange(0, tempTextArea.value.length);
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.error('Error al copiar:', err);
+      }
+      document.body.removeChild(tempTextArea);
+      if (activeEl && typeof activeEl.focus === 'function') {
+        activeEl.focus();
+      }
+    }
+
+    document.getElementById('btn-copy').addEventListener('click', () => {
+      copyTextFallback(editor.value);
+      showToast('Código copiado al portapapeles');
+    });
+
+    document.getElementById('btn-download').addEventListener('click', () => {
+      const blob = new Blob([editor.value], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'index.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Archivo index.html descargado');
+    });
+
+    // =========================================================================
+    // 5. MODO CLARO (BLOC DE NOTAS) / MODO OSCURO DEL EDITOR
+    // =========================================================================
+    let isDarkTheme = false;
+    const btnTheme = document.getElementById('btn-theme');
+    const iconMoon = document.getElementById('icon-moon');
+    const iconSun = document.getElementById('icon-sun');
+    const themeLabel = document.getElementById('theme-label');
+
+    btnTheme.addEventListener('click', () => {
+      isDarkTheme = !isDarkTheme;
+      if (isDarkTheme) {
+        editorPane.classList.replace('bg-white', 'bg-slate-900');
+        editorHeader.classList.replace('bg-slate-100', 'bg-slate-800');
+        editorHeader.classList.replace('border-slate-200', 'border-slate-700');
+        editorHeader.classList.replace('text-slate-600', 'text-slate-300');
+        document.getElementById('editor-filename').classList.replace('text-slate-700', 'text-slate-200');
+        lineNumbers.classList.replace('bg-slate-50', 'bg-slate-900');
+        lineNumbers.classList.replace('text-slate-400', 'text-slate-500');
+        lineNumbers.classList.replace('border-slate-200', 'border-slate-800');
+        editor.classList.replace('bg-white', 'bg-slate-900');
+        editor.classList.replace('text-slate-800', 'text-slate-100');
+        editorFooter.classList.replace('bg-slate-50', 'bg-slate-800');
+        editorFooter.classList.replace('border-slate-200', 'border-slate-700');
+        editorFooter.classList.replace('text-slate-500', 'text-slate-400');
+        btnTheme.classList.replace('hover:bg-slate-200', 'hover:bg-slate-700');
+        btnTheme.classList.replace('text-slate-600', 'text-slate-200');
+        iconMoon.classList.add('hidden');
+        iconSun.classList.remove('hidden');
+        themeLabel.textContent = 'Modo Claro';
+      } else {
+        editorPane.classList.replace('bg-slate-900', 'bg-white');
+        editorHeader.classList.replace('bg-slate-800', 'bg-slate-100');
+        editorHeader.classList.replace('border-slate-700', 'border-slate-200');
+        editorHeader.classList.replace('text-slate-300', 'text-slate-600');
+        document.getElementById('editor-filename').classList.replace('text-slate-200', 'text-slate-700');
+        lineNumbers.classList.replace('bg-slate-900', 'bg-slate-50');
+        lineNumbers.classList.replace('text-slate-500', 'text-slate-400');
+        lineNumbers.classList.replace('border-slate-800', 'border-slate-200');
+        editor.classList.replace('bg-slate-900', 'bg-white');
+        editor.classList.replace('text-slate-100', 'text-slate-800');
+        editorFooter.classList.replace('bg-slate-800', 'bg-slate-50');
+        editorFooter.classList.replace('border-slate-700', 'border-slate-200');
+        editorFooter.classList.replace('text-slate-400', 'text-slate-500');
+        btnTheme.classList.replace('hover:bg-slate-700', 'hover:bg-slate-200');
+        btnTheme.classList.replace('text-slate-200', 'text-slate-600');
+        iconSun.classList.add('hidden');
+        iconMoon.classList.remove('hidden');
+        themeLabel.textContent = 'Modo Oscuro';
+      }
+    });
+
+    // =========================================================================
+    // 6. SIMULADOR RESPONSIVE (ESCRITORIO / MÓVIL) Y ABRIR EN PESTAÑA NUEVA
+    // =========================================================================
+    const previewWrapper = document.getElementById('preview-wrapper');
+    const btnDesktop = document.getElementById('btn-desktop');
+    const btnMobile = document.getElementById('btn-mobile');
+
+    btnDesktop.addEventListener('click', () => {
+      previewWrapper.style.width = '100%';
+      previewWrapper.classList.remove('my-2', 'shadow-xl');
+      btnDesktop.className = 'px-2 py-1 rounded bg-blue-100 text-blue-700 font-medium flex items-center gap-1 transition cursor-pointer';
+      btnMobile.className = 'px-2 py-1 rounded hover:bg-slate-200 text-slate-600 font-medium flex items-center gap-1 transition cursor-pointer';
+    });
+
+    btnMobile.addEventListener('click', () => {
+      previewWrapper.style.width = '410px';
+      previewWrapper.style.maxWidth = '100%';
+      previewWrapper.classList.add('my-2', 'shadow-xl');
+      btnMobile.className = 'px-2 py-1 rounded bg-blue-100 text-blue-700 font-medium flex items-center gap-1 transition cursor-pointer';
+      btnDesktop.className = 'px-2 py-1 rounded hover:bg-slate-200 text-slate-600 font-medium flex items-center gap-1 transition cursor-pointer';
+      showToast('Vista móvil activada (410px) — ideal para probar @media (max-width: 600px)');
+    });
+
+    document.getElementById('btn-newtab').addEventListener('click', () => {
+      const blob = new Blob([editor.value], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    });
+
+    // =========================================================================
+    // 8. MODAL DE OBJETIVO FINAL (SOLO VISTA PREVIA DEL RESULTADO) Y CHULETA
+    // =========================================================================
+    const goalModal = document.getElementById('goal-modal');
+    const goalIframe = document.getElementById('goal-iframe');
+
+    document.getElementById('btn-goal').addEventListener('click', () => {
+      goalIframe.srcdoc = TEMPLATES.solution;
+      goalModal.classList.remove('hidden');
+      goalModal.classList.add('flex');
+    });
+
+    document.getElementById('close-goal-modal').addEventListener('click', () => {
+      goalModal.classList.add('hidden');
+      goalModal.classList.remove('flex');
+    });
+
+    goalModal.addEventListener('click', (e) => {
+      if (e.target === goalModal) {
+        goalModal.classList.add('hidden');
+        goalModal.classList.remove('flex');
+      }
+    });
+
+    document.getElementById('btn-start-progressive').addEventListener('click', () => {
+      loadTemplate('progressive');
+      guidedBar.classList.remove('hidden');
+      currentStep = 1;
+      renderContinuousStep();
+      goalModal.classList.add('hidden');
+      goalModal.classList.remove('flex');
+      editor.focus();
+      showToast('¡Listo! Empieza escribiendo el Paso 1');
+    });
+
+    // Drawer de Chuleta
+    const cheatsheetDrawer = document.getElementById('cheatsheet-drawer');
+    document.getElementById('btn-cheatsheet').addEventListener('click', () => {
+      cheatsheetDrawer.classList.remove('translate-x-full');
+    });
+
+    document.getElementById('close-cheatsheet').addEventListener('click', () => {
+      cheatsheetDrawer.classList.add('translate-x-full');
+    });
+
+    document.querySelectorAll('.copy-snippet').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const snippet = btn.getAttribute('data-code');
+        copyTextFallback(snippet);
+        showToast('Fragmento copiado. Pégalo en tu código (Ctrl+V)');
+      });
+    });
+
+    // =========================================================================
+    // 9. DIVISOR ARRASTRABLE ENTRE EDITOR Y VISTA PREVIA (SPLIT-PANE)
+    // =========================================================================
+    const resizer = document.getElementById('resizer');
+    const workspace = document.getElementById('workspace');
+    const previewPane = document.getElementById('preview-pane');
+    let isResizing = false;
+
+    resizer.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      resizer.classList.add('dragging');
+      previewFrame.style.pointerEvents = 'none'; // Evitar que el iframe capture el ratón al arrastrar
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+      const containerRect = workspace.getBoundingClientRect();
+      const offsetX = e.clientX - containerRect.left;
+      const percentage = (offsetX / containerRect.width) * 100;
+
+      if (percentage > 20 && percentage < 80) {
+        editorPane.style.width = `${percentage}%`;
+        previewPane.style.width = `${100 - percentage}%`;
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        resizer.classList.remove('dragging');
+        previewFrame.style.pointerEvents = 'auto';
+      }
+    });
+
+    // =========================================================================
+    // 10. NOTIFICACIONES TOAST E INICIALIZACIÓN
+    // =========================================================================
+    let toastTimeout;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.textContent = msg;
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 2800);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Restaurar código previo si existía en el navegador o iniciar en el Reto Continuo limpio
+      let savedCode = null;
+      try {
+        savedCode = localStorage.getItem('notepad_web_code');
+      } catch (e) {}
+
+      if (savedCode !== null && savedCode.trim() !== '') {
+        editor.value = savedCode;
+        updateLineNumbers();
+        updatePreview();
+        updateCursorPosition();
+        renderContinuousStep();
+      } else {
+        loadTemplate('progressive');
+        renderContinuousStep();
+      }
+    });
+  </script>
+</body>
+</html>
